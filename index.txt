@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CodBaya — فاحص الاتصال</title>
+<meta name="description" content="CodBaya — فاحص اتصال للمطورين والگيمرز العراقيين. من تطوير عبدالباسط خضير."/>
+<meta name="author" content="عبدالباسط خضير"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;900&display=swap" rel="stylesheet"/>
+<style>
+
+/* =====================================================
+iOS 26 Liquid Glass — الألوان الرسمية
+Cantaloupe, Sky, Lavender, Spearmint
+===================================================== */
+:root {
+–ios-bg1: #0a0015;
+–ios-bg2: #000d1a;
+–ios-lavender: #bf5af2;
+–ios-blue:     #0a84ff;
+–ios-teal:     #5ac8fa;
+–ios-pink:     #ff375f;
+–ios-green:    #30d158;
+–ios-yellow:   #ffd60a;
+–ios-orange:   #ff9f0a;
+
+/* الزجاج */
+–g-bg:     rgba(255,255,255,0.072);
+–g-bg2:    rgba(255,255,255,0.042);
+–g-border: rgba(255,255,255,0.22);
+–g-border2:rgba(255,255,255,0.10);
+–g-shine:  rgba(255,255,255,0.18);
+–g-blur:   blur(48px) saturate(2.2) brightness(1.12);
+–g-blur2:  blur(64px) saturate(2.5) brightness(1.08);
+
+–t1: rgba(255,255,255,0.95);
+–t2: rgba(255,255,255,0.55);
+–t3: rgba(255,255,255,0.28);
+
+–font: ‘Cairo’, sans-serif;
+–ease: cubic-bezier(0.23,1,0.32,1);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+font-family:var(–font);
+min-height:100vh;
+overflow-x:hidden;
+color:var(–t1);
+-webkit-font-smoothing:antialiased;
+position:relative;
+}
+
+/* =====================================================
+الخلفية الكونية — iOS 26 Wallpaper
+===================================================== */
+.bg-canvas{
+position:fixed;inset:0;z-index:0;
+background: #060010;
+overflow:hidden;
+}
+/* طبقة التدرج الأساسية */
+.bg-canvas::before{
+content:’’;
+position:absolute;inset:0;
+background:
+radial-gradient(ellipse 90% 70% at 15% 5%,  rgba(191,90,242,0.7)  0%, transparent 50%),
+radial-gradient(ellipse 70% 60% at 85% 10%,  rgba(10,132,255,0.6)  0%, transparent 48%),
+radial-gradient(ellipse 80% 65% at 5%  90%,  rgba(255,55,95,0.45)  0%, transparent 52%),
+radial-gradient(ellipse 60% 55% at 95% 85%,  rgba(90,200,250,0.4)  0%, transparent 48%),
+radial-gradient(ellipse 50% 50% at 50% 50%,  rgba(48,209,88,0.12)  0%, transparent 55%);
+}
+/* طبقة الضباب العميق */
+.bg-canvas::after{
+content:’’;
+position:absolute;inset:0;
+background:
+radial-gradient(ellipse 100% 100% at 50% 50%, transparent 30%, rgba(6,0,16,0.75) 100%);
+}
+/* حبوب متحركة */
+.orb{
+position:absolute;border-radius:50%;
+filter:blur(100px);pointer-events:none;
+will-change:transform;
+}
+.o1{width:700px;height:700px;top:-200px;right:-150px;
+background:radial-gradient(circle,rgba(191,90,242,0.35),transparent 70%);
+animation:orbA 20s ease-in-out infinite;}
+.o2{width:600px;height:600px;bottom:-150px;left:-150px;
+background:radial-gradient(circle,rgba(10,132,255,0.3),transparent 70%);
+animation:orbA 25s ease-in-out infinite reverse;}
+.o3{width:450px;height:450px;top:35%;left:20%;
+background:radial-gradient(circle,rgba(255,55,95,0.2),transparent 70%);
+animation:orbA 18s ease-in-out infinite;animation-delay:-8s;}
+.o4{width:400px;height:400px;top:20%;right:15%;
+background:radial-gradient(circle,rgba(90,200,250,0.22),transparent 70%);
+animation:orbA 22s ease-in-out infinite;animation-delay:-12s;}
+.o5{width:300px;height:300px;bottom:25%;right:5%;
+background:radial-gradient(circle,rgba(48,209,88,0.18),transparent 70%);
+animation:orbA 16s ease-in-out infinite;animation-delay:-5s;}
+@keyframes orbA{
+0%,100%{transform:translate(0,0) scale(1);}
+25%    {transform:translate(40px,-30px) scale(1.08);}
+50%    {transform:translate(-25px,45px) scale(0.94);}
+75%    {transform:translate(30px,25px) scale(1.04);}
+}
+
+/* =====================================================
+الطبقة الرئيسية
+===================================================== */
+.page{
+position:relative;z-index:10;
+min-height:100vh;
+display:flex;flex-direction:column;
+align-items:center;
+padding:0 16px 60px;
+}
+
+/* =====================================================
+الشريط العلوي — Liquid Glass Bar
+===================================================== */
+.topbar{
+width:100%;max-width:560px;
+margin-top:20px;
+border-radius:20px;
+background:var(–g-bg);
+backdrop-filter:var(–g-blur);
+-webkit-backdrop-filter:var(–g-blur);
+border:1px solid var(–g-border);
+box-shadow:
+0 1px 0 var(–g-shine) inset,
+0 -1px 0 rgba(0,0,0,0.2) inset,
+0 12px 50px rgba(0,0,0,0.45),
+0 0 0 0.5px rgba(255,255,255,0.08);
+padding:12px 18px;
+display:flex;align-items:center;justify-content:space-between;
+animation:dropIn 0.7s var(–ease) both;
+}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.brand-pill{
+height:34px;padding:0 14px;border-radius:10px;
+background:linear-gradient(135deg,#bf5af2,#5e5ce6,#0a84ff);
+display:flex;align-items:center;
+font-size:0.88rem;font-weight:900;color:#fff;letter-spacing:-0.01em;
+box-shadow:0 0 20px rgba(191,90,242,0.6),0 1px 0 rgba(255,255,255,0.25) inset;
+}
+.brand-text{font-size:1rem;font-weight:700;color:var(–t1);}
+.brand-sub{font-size:0.58rem;color:var(–t3);letter-spacing:0.12em;margin-top:1px;}
+.topbar-tag{
+font-size:0.62rem;font-weight:600;letter-spacing:0.05em;
+padding:4px 12px;border-radius:999px;
+background:rgba(191,90,242,0.18);
+border:1px solid rgba(191,90,242,0.3);
+color:#e0aaff;
+}
+
+/* =====================================================
+Hero
+===================================================== */
+.hero{
+text-align:center;
+padding:44px 0 28px;
+max-width:500px;width:100%;
+animation:fadeUp 0.8s var(–ease) 0.1s both;
+}
+.hero-eyebrow{
+display:inline-flex;align-items:center;gap:8px;
+font-size:0.68rem;font-weight:600;letter-spacing:0.18em;
+text-transform:uppercase;color:rgba(191,90,242,0.9);
+margin-bottom:14px;
+}
+.hero-eyebrow .dot{
+width:5px;height:5px;border-radius:50%;
+background:#bf5af2;
+box-shadow:0 0 8px #bf5af2;
+animation:dotPulse 2s ease-in-out infinite;
+}
+@keyframes dotPulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.8);opacity:0.5;}}
+.hero-title{
+font-size:clamp(1.9rem,7vw,3rem);
+font-weight:900;line-height:1.2;
+margin-bottom:10px;letter-spacing:-0.02em;
+}
+.hero-title .grad{
+background:linear-gradient(135deg,#f5e6ff 0%,#bf5af2 35%,#5e5ce6 60%,#0a84ff 100%);
+-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero-sub{
+font-size:0.9rem;line-height:1.8;color:var(–t2);
+font-weight:400;max-width:380px;margin:0 auto;
+}
+
+/* =====================================================
+الكارت الرئيسي — Liquid Glass Card
+===================================================== */
+.main-card{
+width:100%;max-width:480px;
+border-radius:28px;
+background:var(–g-bg);
+backdrop-filter:var(–g-blur2);
+-webkit-backdrop-filter:var(–g-blur2);
+border:1px solid var(–g-border);
+box-shadow:
+0 1px 0 var(–g-shine) inset,
+0 -1px 0 rgba(0,0,0,0.25) inset,
+0 1px 0 rgba(255,255,255,0.06) inset,
+0 32px 100px rgba(0,0,0,0.55),
+0 0 0 0.5px rgba(255,255,255,0.07),
+0 0 80px rgba(191,90,242,0.08);
+padding:28px;
+position:relative;overflow:hidden;
+animation:fadeUp 0.8s var(–ease) 0.2s both;
+}
+/* انعكاس زجاجي علوي */
+.main-card::before{
+content:’’;
+position:absolute;top:0;left:10%;right:10%;
+height:1px;
+background:linear-gradient(90deg,transparent,rgba(255,255,255,0.35),transparent);
+pointer-events:none;
+}
+/* ضوء زاوية */
+.main-card::after{
+content:’’;
+position:absolute;top:-60px;right:-60px;
+width:200px;height:200px;
+background:radial-gradient(circle,rgba(191,90,242,0.12),transparent 70%);
+pointer-events:none;
+}
+
+/* =====================================================
+Dropdown السيرفر
+===================================================== */
+.srv-label{
+font-size:0.65rem;font-weight:600;letter-spacing:0.14em;
+text-transform:uppercase;color:var(–t3);
+margin-bottom:8px;
+}
+.srv-select-wrap{
+position:relative;margin-bottom:22px;
+}
+.srv-select{
+width:100%;
+padding:14px 44px 14px 16px;
+border-radius:16px;
+background:rgba(255,255,255,0.06);
+backdrop-filter:blur(20px);
+-webkit-backdrop-filter:blur(20px);
+border:1px solid var(–g-border2);
+box-shadow:0 1px 0 rgba(255,255,255,0.08) inset,0 4px 20px rgba(0,0,0,0.3);
+color:var(–t1);
+font-family:var(–font);font-size:0.92rem;font-weight:600;
+-webkit-appearance:none;appearance:none;
+cursor:pointer;
+transition:all 0.2s ease;
+outline:none;
+}
+.srv-select:focus{
+border-color:rgba(191,90,242,0.5);
+box-shadow:0 0 0 3px rgba(191,90,242,0.15),0 1px 0 rgba(255,255,255,0.08) inset;
+}
+/* أيقونة السهم */
+.srv-arrow{
+position:absolute;top:50%;transform:translateY(-50%);
+left:14px;pointer-events:none;
+color:var(–t3);font-size:0.7rem;
+}
+/* خيارات الـ select */
+.srv-select option{
+background:#1a0a2e;color:#fff;
+font-family:var(–font);font-size:0.9rem;
+}
+
+/* =====================================================
+زر الفحص — الزجاجي الكبير
+===================================================== */
+.btn-ping{
+width:100%;
+height:58px;
+border-radius:18px;
+border:1px solid rgba(191,90,242,0.45);
+cursor:pointer;
+font-family:var(–font);font-size:1rem;font-weight:700;
+color:#f0e8ff;letter-spacing:0.01em;
+position:relative;overflow:hidden;
+transition:all 0.3s var(–ease);
+display:flex;align-items:center;justify-content:center;gap:10px;
+/* الزجاج الملوّن */
+background:
+linear-gradient(180deg,
+rgba(255,255,255,0.10) 0%,
+rgba(255,255,255,0.04) 100%),
+linear-gradient(135deg,
+rgba(191,90,242,0.4) 0%,
+rgba(94,92,230,0.35) 50%,
+rgba(10,132,255,0.3) 100%);
+backdrop-filter:blur(30px);
+-webkit-backdrop-filter:blur(30px);
+box-shadow:
+0 1px 0 rgba(255,255,255,0.22) inset,
+0 -1px 0 rgba(0,0,0,0.2) inset,
+0 8px 40px rgba(191,90,242,0.35),
+0 2px 8px rgba(0,0,0,0.4);
+}
+/* وميض الضوء */
+.btn-ping::before{
+content:’’;
+position:absolute;top:0;left:-80%;
+width:60%;height:100%;
+background:linear-gradient(90deg,transparent,rgba(255,255,255,0.13),transparent);
+transform:skewX(-20deg);
+transition:left 0.55s ease;
+pointer-events:none;
+}
+.btn-ping:hover:not(:disabled)::before{left:130%;}
+.btn-ping:hover:not(:disabled){
+border-color:rgba(191,90,242,0.7);
+box-shadow:
+0 1px 0 rgba(255,255,255,0.3) inset,
+0 -1px 0 rgba(0,0,0,0.2) inset,
+0 16px 60px rgba(191,90,242,0.55),
+0 4px 16px rgba(0,0,0,0.5);
+transform:translateY(-2px) scale(1.01);
+}
+.btn-ping:active:not(:disabled){transform:scale(0.98);box-shadow:0 4px 20px rgba(191,90,242,0.3);}
+.btn-ping:disabled{opacity:0.4;cursor:not-allowed;transform:none !important;}
+.btn-ping svg{width:20px;height:20px;flex-shrink:0;}
+.spinner{
+width:18px;height:18px;border-radius:50%;flex-shrink:0;
+border:2.5px solid rgba(255,255,255,0.2);
+border-top-color:rgba(255,255,255,0.9);
+animation:spin 0.6s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* =====================================================
+بطاقة النتيجة — تظهر بعد الفحص
+===================================================== */
+.result-wrap{
+width:100%;max-width:480px;
+margin-top:14px;
+animation:fadeUp 0.8s var(–ease) 0.3s both;
+}
+.result-card{
+border-radius:28px;
+background:var(–g-bg);
+backdrop-filter:var(–g-blur2);
+-webkit-backdrop-filter:var(–g-blur2);
+border:1px solid var(–g-border2);
+box-shadow:
+0 1px 0 var(–g-shine) inset,
+0 -1px 0 rgba(0,0,0,0.2) inset,
+0 24px 80px rgba(0,0,0,0.5),
+0 0 0 0.5px rgba(255,255,255,0.06);
+padding:28px;
+position:relative;overflow:hidden;
+display:none;
+transition:box-shadow 0.5s ease;
+}
+.result-card.show{
+display:block;
+animation:scaleIn 0.5s var(–ease);
+}
+@keyframes scaleIn{
+from{opacity:0;transform:scale(0.92) translateY(12px);}
+to  {opacity:1;transform:scale(1) translateY(0);}
+}
+/* انعكاس زجاجي */
+.result-card::before{
+content:’’;
+position:absolute;top:0;left:12%;right:12%;height:1px;
+background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent);
+pointer-events:none;
+}
+/* توهج الحالة */
+.result-card.good{box-shadow:0 1px 0 var(–g-shine) inset,0 -1px 0 rgba(0,0,0,0.2) inset,0 24px 80px rgba(0,0,0,0.5),0 0 60px rgba(48,209,88,0.12);}
+.result-card.ok  {box-shadow:0 1px 0 var(–g-shine) inset,0 -1px 0 rgba(0,0,0,0.2) inset,0 24px 80px rgba(0,0,0,0.5),0 0 60px rgba(255,214,10,0.1);}
+.result-card.bad {box-shadow:0 1px 0 var(–g-shine) inset,0 -1px 0 rgba(0,0,0,0.2) inset,0 24px 80px rgba(0,0,0,0.5),0 0 60px rgba(255,55,95,0.12);}
+
+/* رأس بطاقة النتيجة */
+.rc-head{
+display:flex;align-items:center;justify-content:space-between;
+margin-bottom:24px;
+}
+.rc-srv{display:flex;align-items:center;gap:11px;}
+.rc-icon{
+width:46px;height:46px;border-radius:13px;font-size:1.3rem;
+display:flex;align-items:center;justify-content:center;
+background:rgba(255,255,255,0.07);
+border:1px solid rgba(255,255,255,0.12);
+box-shadow:0 1px 0 rgba(255,255,255,0.1) inset,0 4px 16px rgba(0,0,0,0.25);
+flex-shrink:0;
+}
+.rc-srv-name{font-size:1rem;font-weight:700;color:var(–t1);}
+.rc-srv-sub {font-size:0.65rem;color:var(–t3);margin-top:2px;}
+
+/* شارة الحالة */
+.rc-badge{
+font-size:0.68rem;font-weight:700;letter-spacing:0.03em;
+padding:5px 14px;border-radius:999px;flex-shrink:0;
+}
+.rb-loading{background:rgba(255,214,10,0.12);border:1px solid rgba(255,214,10,0.3);color:#ffd60a;animation:glow 1.2s ease-in-out infinite;}
+@keyframes glow{0%,100%{opacity:1;}50%{opacity:0.45;}}
+.rb-good{background:rgba(48,209,88,0.12); border:1px solid rgba(48,209,88,0.3); color:#30d158;}
+.rb-ok  {background:rgba(255,214,10,0.12);border:1px solid rgba(255,214,10,0.3); color:#ffd60a;}
+.rb-bad {background:rgba(255,55,95,0.12); border:1px solid rgba(255,55,95,0.3);  color:#ff375f;}
+
+/* الرقم الضخم */
+.rc-num-area{
+display:flex;align-items:flex-end;gap:12px;
+margin-bottom:22px;
+}
+.rc-big{
+font-size:clamp(5.5rem,22vw,8rem);
+font-weight:900;line-height:1;letter-spacing:-0.04em;
+font-variant-numeric:tabular-nums;
+transition:all 0.4s var(–ease);
+}
+.rn-wait {color:rgba(255,255,255,0.12);}
+.rn-loading{color:rgba(255,255,255,0.2);animation:numBlink 0.8s ease infinite;}
+@keyframes numBlink{0%,100%{opacity:0.2;}50%{opacity:0.55;}}
+.rn-good{
+background:linear-gradient(135deg,#a0ffce,#30d158);
+-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+filter:drop-shadow(0 0 30px rgba(48,209,88,0.5));
+}
+.rn-ok{
+background:linear-gradient(135deg,#fff0a0,#ffd60a);
+-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+filter:drop-shadow(0 0 30px rgba(255,214,10,0.5));
+}
+.rn-bad{
+background:linear-gradient(135deg,#ffb0be,#ff375f);
+-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+filter:drop-shadow(0 0 30px rgba(255,55,95,0.5));
+}
+.rc-unit-col{padding-bottom:14px;}
+.rc-unit{font-size:1.1rem;color:var(–t2);font-weight:300;}
+.rc-spark-lbl{font-size:0.56rem;color:var(–t3);letter-spacing:0.08em;margin-top:6px;}
+.rc-spark{display:flex;align-items:flex-end;gap:3px;height:32px;margin-top:4px;}
+.rc-spark span{flex:1;border-radius:3px;min-height:4px;display:block;transition:height 0.4s ease;}
+
+/* العبارة العراقية */
+.rc-phrase{
+border-radius:16px;padding:14px 18px;
+background:rgba(255,255,255,0.04);
+border:1px solid rgba(255,255,255,0.07);
+box-shadow:0 1px 0 rgba(255,255,255,0.06) inset;
+display:flex;align-items:center;gap:12px;
+margin-bottom:18px;
+}
+.rc-phrase-icon{font-size:1.3rem;flex-shrink:0;}
+.rc-phrase-text{font-size:0.95rem;font-weight:600;line-height:1.5;}
+.rp-good{color:#5eeba0;}
+.rp-ok  {color:#ffe566;}
+.rp-bad {color:#ff7a90;}
+
+/* شريط الأداء */
+.rc-bar-lbl{
+display:flex;justify-content:space-between;
+font-size:0.6rem;color:var(–t3);letter-spacing:0.05em;
+margin-bottom:6px;
+}
+.rc-bar-track{
+height:6px;border-radius:999px;
+background:rgba(255,255,255,0.06);
+border:1px solid rgba(255,255,255,0.05);
+overflow:hidden;
+}
+.rc-bar-fill{
+height:100%;border-radius:999px;
+width:0%;
+transition:width 0.9s var(–ease),background 0.4s ease;
+}
+
+/* =====================================================
+نصيحة اليوم
+===================================================== */
+.tip-card{
+width:100%;max-width:480px;
+margin-top:14px;
+border-radius:22px;
+background:rgba(255,255,255,0.042);
+backdrop-filter:blur(40px) saturate(2);
+-webkit-backdrop-filter:blur(40px) saturate(2);
+border:1px solid rgba(255,255,255,0.10);
+box-shadow:
+0 1px 0 rgba(255,255,255,0.12) inset,
+0 20px 60px rgba(0,0,0,0.4);
+padding:22px 24px;
+position:relative;overflow:hidden;
+animation:fadeUp 0.8s var(–ease) 0.35s both;
+}
+/* شريط جانبي ملوّن */
+.tip-card::before{
+content:’’;
+position:absolute;top:0;right:0;bottom:0;width:3px;
+background:linear-gradient(180deg,#bf5af2,#5e5ce6,#0a84ff);
+border-radius:0 22px 22px 0;
+}
+/* ضوء خلفي */
+.tip-card::after{
+content:’’;
+position:absolute;bottom:-40px;left:-40px;
+width:150px;height:150px;
+background:radial-gradient(circle,rgba(94,92,230,0.1),transparent 70%);
+pointer-events:none;
+}
+.tip-top{
+display:flex;align-items:center;justify-content:space-between;
+margin-bottom:12px;
+}
+.tip-left{display:flex;align-items:center;gap:9px;}
+.tip-ico{
+width:32px;height:32px;border-radius:9px;flex-shrink:0;
+background:rgba(191,90,242,0.15);
+border:1px solid rgba(191,90,242,0.2);
+display:flex;align-items:center;justify-content:center;font-size:0.9rem;
+}
+.tip-ttl{font-size:0.85rem;font-weight:700;color:var(–t1);}
+.tip-en {font-size:0.58rem;color:var(–t3);letter-spacing:0.1em;margin-top:1px;}
+.btn-next{
+font-family:var(–font);font-size:0.68rem;font-weight:600;
+padding:5px 12px;border-radius:10px;cursor:pointer;
+background:rgba(255,255,255,0.05);color:var(–t2);
+border:1px solid rgba(255,255,255,0.09);
+transition:all 0.2s ease;
+}
+.btn-next:hover{background:rgba(191,90,242,0.15);color:#d8aaff;border-color:rgba(191,90,242,0.25);}
+.tip-body{
+font-size:0.92rem;line-height:1.85;color:var(–t1);
+font-weight:400;transition:opacity 0.25s ease;
+}
+.tip-cat{
+display:inline-block;margin-top:10px;
+font-size:0.6rem;font-weight:700;letter-spacing:0.07em;
+padding:2px 10px;border-radius:4px;
+background:rgba(191,90,242,0.1);color:#d8aaff;
+border:1px solid rgba(191,90,242,0.18);
+}
+
+/* =====================================================
+التذييل
+===================================================== */
+footer{
+width:100%;max-width:480px;
+margin-top:20px;text-align:center;
+animation:fadeUp 0.8s var(–ease) 0.45s both;
+}
+.dev-badge{
+display:inline-flex;align-items:center;gap:10px;
+padding:9px 18px;border-radius:14px;
+background:rgba(255,255,255,0.05);
+backdrop-filter:blur(20px);
+border:1px solid rgba(255,255,255,0.09);
+box-shadow:0 1px 0 rgba(255,255,255,0.08) inset,0 8px 30px rgba(0,0,0,0.3);
+}
+.dev-ava{
+width:32px;height:32px;border-radius:50%;flex-shrink:0;
+background:linear-gradient(135deg,#bf5af2,#5e5ce6);
+display:flex;align-items:center;justify-content:center;
+font-size:0.7rem;font-weight:900;color:#fff;
+}
+.dev-name{font-size:0.82rem;font-weight:700;color:var(–t1);}
+.dev-role{font-size:0.58rem;color:var(–t3);letter-spacing:0.08em;margin-top:1px;}
+.foot-copy{font-size:0.62rem;color:rgba(255,255,255,0.15);margin-top:12px;letter-spacing:0.04em;}
+
+/* روابط التواصل */
+.socials{
+display:flex;justify-content:center;gap:10px;
+margin-top:16px;flex-wrap:wrap;
+}
+.soc-btn{
+display:inline-flex;align-items:center;gap:7px;
+padding:9px 16px;border-radius:12px;
+text-decoration:none;
+font-size:0.75rem;font-weight:700;letter-spacing:0.02em;
+border:1px solid rgba(255,255,255,0.09);
+background:rgba(255,255,255,0.05);
+backdrop-filter:blur(20px);
+color:var(–t2);
+transition:all 0.25s var(–ease);
+position:relative;overflow:hidden;
+}
+.soc-btn::before{
+content:’’;
+position:absolute;top:0;left:0;right:0;height:1px;
+background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent);
+}
+.soc-btn:hover{
+transform:translateY(-2px);
+color:var(–t1);
+box-shadow:0 8px 30px rgba(0,0,0,0.35);
+}
+.soc-tg:hover { background:rgba(38,161,210,0.18); border-color:rgba(38,161,210,0.35); box-shadow:0 8px 30px rgba(38,161,210,0.2); }
+.soc-tt:hover { background:rgba(0,0,0,0.4);        border-color:rgba(255,255,255,0.2);  box-shadow:0 8px 30px rgba(0,0,0,0.4); }
+.soc-ig:hover { background:rgba(225,48,108,0.18);  border-color:rgba(225,48,108,0.35);  box-shadow:0 8px 30px rgba(225,48,108,0.2); }
+.soc-icon{ font-size:1rem;flex-shrink:0; }
+
+/* =====================================================
+أنيميشن دخول
+===================================================== */
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:translateY(0);}}
+@keyframes dropIn{from{opacity:0;transform:translateY(-14px);}to{opacity:1;transform:translateY(0);}}
+
+/* =====================================================
+شاشات صغيرة
+===================================================== */
+@media(max-width:500px){
+.rc-big{font-size:5rem;}
+.hero-title{font-size:1.75rem;}
+}
+</style>
+
+</head>
+<body>
+
+<!-- الخلفية -->
+
+<div class="bg-canvas" aria-hidden="true">
+  <div class="orb o1"></div>
+  <div class="orb o2"></div>
+  <div class="orb o3"></div>
+  <div class="orb o4"></div>
+  <div class="orb o5"></div>
+</div>
+
+<div class="page">
+
+  <!-- ===================================================
+       الشريط العلوي
+  =================================================== -->
+
+  <header class="topbar" role="banner">
+    <a class="brand" href="#" aria-label="CodBaya">
+      <div class="brand-pill" aria-hidden="true">CB</div>
+      <div>
+        <div class="brand-text">CodBaya</div>
+        <div class="brand-sub">IRAQ PING CHECKER</div>
+      </div>
+    </a>
+    <span class="topbar-tag">🇮🇶 عراق</span>
+  </header>
+
+  <!-- ===================================================
+       Hero
+  =================================================== -->
+
+  <section class="hero" aria-labelledby="hero-h">
+    <div class="hero-eyebrow">
+      <span class="dot" aria-hidden="true"></span>
+      اختبر اتصالك الآن
+    </div>
+    <h1 class="hero-title" id="hero-h">
+      <span class="grad">اعرف بينغك</span><br>
+      اختار وافحص
+    </h1>
+    <p class="hero-sub">اختر السيرفر اللي تريد واضغط — تطلع نتيجتك فوراً.</p>
+  </section>
+
+  <!-- ===================================================
+       الكارت الرئيسي
+  =================================================== -->
+
+  <div class="main-card" role="main">
+
+```
+<!-- اختيار السيرفر -->
+<div class="srv-label" id="srv-lbl">اختر السيرفر</div>
+<div class="srv-select-wrap">
+  <select class="srv-select" id="srvSelect" aria-labelledby="srv-lbl">
+    <option value="google"     data-icon="🌐" data-sub="Google · Global CDN">🌐  جوجل — Google</option>
+    <option value="cloudflare" data-icon="🔶" data-sub="Cloudflare · DNS 1.1.1.1">🔶  كلاودفلير — Cloudflare</option>
+    <option value="aws"        data-icon="🏙️" data-sub="Amazon · Middle East">🏙️  AWS دبي — Middle East</option>
+    <option value="valorant"   data-icon="🎮" data-sub="AWS Bahrain · Gaming">🎮  Valorant — Bahrain</option>
+    <option value="github"     data-icon="🐙" data-sub="GitHub · DevOps">🐙  جيت‌هاب — GitHub</option>
+  </select>
+  <span class="srv-arrow" aria-hidden="true">▼</span>
+</div>
+
+<!-- زر الفحص -->
+<button class="btn-ping" id="runBtn" onclick="startPing()" aria-label="ابدأ فحص الاتصال">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="10"/>
+    <polyline points="12,6 12,12 16,14"/>
+  </svg>
+  <span id="btnTxt">ابدأ الفحص</span>
+  <span id="btnSpin" style="display:none;align-items:center;gap:8px" aria-label="جارٍ الفحص">
+    <span class="spinner" aria-hidden="true"></span> جارٍ الفحص
+  </span>
+</button>
+```
+
+  </div>
+
+  <!-- ===================================================
+       بطاقة النتيجة
+  =================================================== -->
+
+  <div class="result-wrap" aria-live="polite" aria-label="نتيجة الفحص">
+    <div class="result-card" id="resultCard">
+
+```
+  <!-- رأس البطاقة -->
+  <div class="rc-head">
+    <div class="rc-srv">
+      <div class="rc-icon" id="rcIcon" aria-hidden="true">🌐</div>
+      <div>
+        <div class="rc-srv-name" id="rcName">جوجل</div>
+        <div class="rc-srv-sub"  id="rcSub">Google · Global CDN</div>
+      </div>
+    </div>
+    <span class="rc-badge" id="rcBadge"></span>
+  </div>
+
+  <!-- الرقم الكبير -->
+  <div class="rc-num-area">
+    <span class="rc-big rn-wait" id="rcNum" aria-live="polite" aria-label="زمن الاستجابة">—</span>
+    <div class="rc-unit-col">
+      <div class="rc-unit">ms</div>
+      <div class="rc-spark-lbl">السجل</div>
+      <div class="rc-spark" id="rcSpark" aria-hidden="true"></div>
+    </div>
+  </div>
+
+  <!-- العبارة -->
+  <div class="rc-phrase" id="rcPhrase" style="display:none">
+    <span class="rc-phrase-icon" id="rcPhraseIcon" aria-hidden="true"></span>
+    <span class="rc-phrase-text" id="rcPhraseText"></span>
+  </div>
+
+  <!-- شريط الأداء -->
+  <div id="rcBarWrap" style="display:none">
+    <div class="rc-bar-lbl">
+      <span>ممتاز &lt;60ms</span>
+      <span id="rcBarNum"></span>
+      <span>&gt;130ms بطيء</span>
+    </div>
+    <div class="rc-bar-track">
+      <div class="rc-bar-fill" id="rcBarFill"></div>
+    </div>
+  </div>
+
+</div>
+```
+
+  </div>
+
+  <!-- ===================================================
+       نصيحة اليوم
+  =================================================== -->
+
+  <section class="tip-card" aria-labelledby="tip-h">
+    <div class="tip-top">
+      <div class="tip-left">
+        <div class="tip-ico" aria-hidden="true">💡</div>
+        <div>
+          <div class="tip-ttl" id="tip-h">نصيحة اليوم</div>
+          <div class="tip-en">DAILY TIP · بالعراقي الصريح</div>
+        </div>
+      </div>
+      <button class="btn-next" onclick="nextTip()" aria-label="نصيحة أخرى">أخرى ↺</button>
+    </div>
+    <p class="tip-body" id="tipText"></p>
+    <span class="tip-cat" id="tipCat"></span>
+  </section>
+
+  <!-- ===================================================
+       التذييل
+  =================================================== -->
+
+  <footer>
+    <div style="display:flex;justify-content:center">
+      <div class="dev-badge" aria-label="المطوّر عبدالباسط خضير">
+        <div class="dev-ava" aria-hidden="true">عخ</div>
+        <div>
+          <div class="dev-name">عبدالباسط خضير</div>
+          <div class="dev-role">DEVELOPER · IRAQ 🇮🇶</div>
+        </div>
+      </div>
+    </div>
+    <!-- روابط التواصل الاجتماعي -->
+    <div class="socials" role="navigation" aria-label="روابط التواصل الاجتماعي">
+      <a class="soc-btn soc-tg" href="https://t.me/ipafilesfor" target="_blank" rel="noopener" aria-label="قناة تيليغرام">
+        <span class="soc-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.941z"/></svg>
+        </span>
+        تيليغرام
+      </a>
+      <a class="soc-btn soc-tt" href="https://www.tiktok.com/@087.n?_r=1&_t=ZP-94WnXwVx3tf" target="_blank" rel="noopener" aria-label="تيك توك">
+        <span class="soc-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z"/></svg>
+        </span>
+        تيك توك
+      </a>
+      <a class="soc-btn soc-ig" href="https://www.instagram.com/087.e?igsh=MXBmYTh1czNuZWpqbg%3D%3D&utm_source=qr" target="_blank" rel="noopener" aria-label="إنستقرام">
+        <span class="soc-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg>
+        </span>
+        إنستقرام
+      </a>
+    </div>
+
+```
+<p class="foot-copy">CodBaya · مجاني · بدون تتبع · صُنع بـ ❤️ من العراق</p>
+```
+
+  </footer>
+
+</div><!-- /page -->
+
+<script>
+/* ============================================================
+   النصائح
+============================================================ */
+const TIPS=[
+  {t:"لو بينغك فوق الـ 100ms بالألعاب، روح على إعدادات الراوتر وغيّر DNS إلى 1.1.1.1 — هذي الحيلة خفّضت التأخير عندي بـ 20ms بدون أي تكلفة.",c:"🎮 ألعاب"},
+  {t:"رسائل Git اكتبها بالإنجليزي وابدأها بفعل: مثلاً 'fix: broken login' بدل 'تم الإصلاح' — الفريق سيشكرك على ذلك لاحقاً.",c:"💻 DevOps"},
+  {t:"Ctrl+Shift+P في VS Code يفتح لك Command Palette — فيه كل شيء. تعلّم هذا الاختصار وودّع الماوس للأبد.",c:"⚡ إنتاجية"},
+  {t:"لو انقطع اتصالك بالسيرفر فجأة، أول شيء افرّق بين مشكلة DNS ومشكلة التوجيه — استخدم nslookup وping من cmd.",c:"🌐 شبكات"},
+  {t:"npm audit fix اجعلها عادة بعد كل مشروع. الثغرات الأمنية تتراكم ولا تحسّ بيها لين تصير مشكلة كبيرة.",c:"🔒 أمان"},
+  {t:"Discord وحده يأكل أكثر من 200MB من الذاكرة. لو لعبتك بطيئة، أغلق تطبيقات الخلفية وشوف الفرق.",c:"🎮 ألعاب"},
+  {t:"البيئة الافتراضية في Python ليست اختيارية — هي ضرورية. تنقذك من كوارث تضارب المكتبات.",c:"🐍 Python"},
+  {t:"ملف README.md هو واجهتك للعالم. إذا ما فيه صور توضيحية وطريقة تثبيت، ما أحد سيستخدم مشروعك.",c:"💻 DevOps"},
+  {t:"لو تلعب Valorant وبينغك عالٍ — جرّب غيّر السيرفر إلى Bahrain بدل Dubai. من العراق عادةً Bahrain أقرب.",c:"🎮 ألعاب"},
+  {t:"Cloudflare Workers مجاني ويشغّل كودك على شبكة الحافة — يعني زمن استجابة أقل بكثير للمستخدمين بمنطقتنا.",c:"☁️ سحابي"},
+  {t:"تعلّم Docker لو تريد العمل ضمن فريق. جملة 'يشتغل عندي بس' تنتهي نهائياً لمّا يكون الجميع على نفس الحاوية.",c:"🐳 DevOps"},
+  {t:"Vercel وGitHub Pages مجانيان وكافيان لـ 90% من مشاريعك — لا تحتاج سيرفراً مدفوعاً لتبدأ.",c:"🚀 نشر"},
+  {t:"لا تترك console.log في كود الإنتاج أبداً. استخدم مكتبة سجلات صحيحة وريّح ضميرك.",c:"🐛 تصحيح"},
+  {t:"Tailwind CSS تسرّع كتابة الواجهات بثلاثة أضعاف — الكلاسات جاهزة وما تحتاج ملف CSS منفصل.",c:"🎨 واجهات"},
+];
+let tipIdx=Math.floor(Math.random()*TIPS.length);
+function showTip(i){
+  const el=document.getElementById('tipText');
+  el.style.opacity=0;
+  setTimeout(()=>{
+    el.textContent=TIPS[i].t;
+    document.getElementById('tipCat').textContent=TIPS[i].c;
+    el.style.transition='opacity 0.3s';
+    el.style.opacity=1;
+  },200);
+}
+function nextTip(){tipIdx=(tipIdx+1)%TIPS.length;showTip(tipIdx);}
+showTip(tipIdx);
+
+/* ============================================================
+   السيرفرات
+============================================================ */
+const SERVERS={
+  google:    {url:'https://www.google.com/favicon.ico',    name:'جوجل',      sub:'Google · Global CDN',    icon:'🌐'},
+  cloudflare:{url:'https://www.cloudflare.com/favicon.ico',name:'كلاودفلير', sub:'Cloudflare · DNS 1.1.1.1',icon:'🔶'},
+  aws:       {url:'https://aws.amazon.com/favicon.ico',    name:'AWS دبي',   sub:'Amazon · Middle East',   icon:'🏙️'},
+  valorant:  {url:'https://playvalorant.com/favicon.ico',  name:'Valorant',  sub:'AWS Bahrain · Gaming',   icon:'🎮'},
+  github:    {url:'https://github.com/favicon.ico',        name:'جيت‌هاب', sub:'GitHub · DevOps',         icon:'🐙'},
+};
+
+/* ============================================================
+   القياس
+============================================================ */
+const history={};
+function ping(url){
+  return new Promise(r=>{
+    const t=performance.now();
+    const img=new Image();
+    const tm=setTimeout(()=>{img.src='';r(999);},6000);
+    img.onload=img.onerror=()=>{clearTimeout(tm);r(Math.round(performance.now()-t));};
+    img.src=url+'?_='+Date.now()+Math.random();
+  });
+}
+async function reliablePing(url){
+  const a=await ping(url);
+  await new Promise(r=>setTimeout(r,140));
+  const b=await ping(url);
+  return Math.round((a+b)/2);
+}
+
+function classify(ms){
+  if(ms>=999||ms>130)return{
+    tier:'bad',cardCls:'bad',
+    phrase:ms>=999?'انقطع الاتصال — ما وصل أي جواب!':'بي لغوة — الوطنية طافية!',
+    icon:ms>=999?'⛔':'🔴',
+    numCls:'rn-bad',badgeCls:'rb-bad',
+    badgeTxt:ms>=999?'⛔ منقطع':'🔴 بطيء',
+    phraseCls:'rp-bad',color:'#ff375f'
+  };
+  if(ms>60)return{
+    tier:'ok',cardCls:'ok',
+    phrase:'يگضي شغل — مو طيّارة بس ماشي',
+    icon:'🟡',numCls:'rn-ok',badgeCls:'rb-ok',
+    badgeTxt:'🟡 مقبول',phraseCls:'rp-ok',color:'#ffd60a'
+  };
+  return{
+    tier:'good',cardCls:'good',
+    phrase:'طيّارة — بينغك زين وما في شكوى!',
+    icon:'🟢',numCls:'rn-good',badgeCls:'rb-good',
+    badgeTxt:'🟢 ممتاز',phraseCls:'rp-good',color:'#30d158'
+  };
+}
+
+function drawSpark(id,color){
+  const el=document.getElementById('rcSpark');
+  if(!el||!history[id])return;
+  const vals=history[id];
+  const max=Math.max(...vals.filter(v=>v<999),200);
+  el.innerHTML='';
+  vals.forEach(v=>{
+    const pct=v>=999?100:Math.max(8,Math.round((v/max)*100));
+    const s=document.createElement('span');
+    s.style.cssText=`height:${pct}%;background:${color}80;border-radius:3px;flex:1;`;
+    el.appendChild(s);
+  });
+}
+
+/* ============================================================
+   الدالة الرئيسية
+============================================================ */
+let running=false;
+async function startPing(){
+  if(running)return;
+  const sel=document.getElementById('srvSelect');
+  const id=sel.value;
+  const srv=SERVERS[id];
+  running=true;
+
+  /* الأزرار */
+  const btn=document.getElementById('runBtn');
+  btn.disabled=true;
+  document.getElementById('btnTxt').style.display='none';
+  document.getElementById('btnSpin').style.display='inline-flex';
+
+  /* إظهار الكارت — حالة تحميل */
+  const card=document.getElementById('resultCard');
+  card.className='result-card show';
+  document.getElementById('rcIcon').textContent=srv.icon;
+  document.getElementById('rcName').textContent=srv.name;
+  document.getElementById('rcSub').textContent=srv.sub;
+  const num=document.getElementById('rcNum');
+  num.className='rc-big rn-loading';num.textContent='—';
+  const badge=document.getElementById('rcBadge');
+  badge.className='rc-badge rb-loading';badge.textContent='جارٍ الفحص...';
+  document.getElementById('rcPhrase').style.display='none';
+  document.getElementById('rcBarWrap').style.display='none';
+
+  /* القياس */
+  const ms=await reliablePing(srv.url);
+  const info=classify(ms);
+
+  /* السجل */
+  if(!history[id])history[id]=[];
+  history[id].push(ms);
+  if(history[id].length>8)history[id].shift();
+
+  /* تحديث الكارت */
+  card.className=`result-card show ${info.cardCls}`;
+  num.className=`rc-big ${info.numCls}`;
+  num.textContent=ms>=999?'∞':ms;
+  badge.className=`rc-badge ${info.badgeCls}`;
+  badge.textContent=info.badgeTxt;
+
+  /* العبارة */
+  const ph=document.getElementById('rcPhrase');
+  ph.style.display='flex';
+  document.getElementById('rcPhraseIcon').textContent=info.icon;
+  const pt=document.getElementById('rcPhraseText');
+  pt.className=`rc-phrase-text ${info.phraseCls}`;
+  pt.textContent=info.phrase;
+
+  /* شريط الأداء */
+  const bw=document.getElementById('rcBarWrap');
+  bw.style.display='block';
+  document.getElementById('rcBarNum').textContent=ms>=999?'∞ ms':ms+' ms';
+  const fill=document.getElementById('rcBarFill');
+  fill.style.background=info.color;
+  const pct=ms>=999?100:Math.min(100,Math.round((ms/200)*100));
+  setTimeout(()=>{fill.style.width=pct+'%';},60);
+
+  /* سبارك */
+  drawSpark(id,info.color);
+
+  /* إعادة الزر */
+  btn.disabled=false;
+  document.getElementById('btnTxt').textContent='أعد الفحص';
+  document.getElementById('btnTxt').style.display='inline';
+  document.getElementById('btnSpin').style.display='none';
+  running=false;
+}
+</script>
+
+</body>
+</html>
